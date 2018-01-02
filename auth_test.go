@@ -120,7 +120,7 @@ var (
 	token           = ""
 )
 
-func (m *TestModel) Authorise(username, password string) error {
+func (m *TestModel) Authenticate(username, password string) error {
 	for _, m := range testModels {
 		if m.User.Username == username && m.User.Password == password {
 			return nil

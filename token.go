@@ -4,15 +4,15 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
-// Authoriser is an interface that auth func
-type Authoriser interface {
-	Authorise(loginName, password string) error
+// Authenticator is an interface that auth func
+type Authenticator interface {
+	Authenticate(loginName, password string) error
 }
 
 // CreateToken return jwt token if the auth success, where claim will be stored
 // in jwt payload
-func CreateToken(claim jwt.Claims, auth Authoriser, loginName, password string) (string, error) {
-	if err := auth.Authorise(loginName, password); err != nil {
+func CreateToken(claim jwt.Claims, auth Authenticator, loginName, password string) (string, error) {
+	if err := auth.Authenticate(loginName, password); err != nil {
 		return "", err
 	}
 
