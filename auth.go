@@ -29,6 +29,11 @@ func SetJWTKeyName(name string) {
 	jwtKeyName = name
 }
 
+// GetJWTKeyName get the name of Role in jwt payload,
+func GetJWTKeyName() string {
+	return jwtKeyName
+}
+
 // SetRoleKeyName declares rolekeyName in jwt.Claims. auth package will
 // get the value with the key named by rolekeyName to valdate the scope
 // of authentication, the default value of roleKeyname is "Role"
