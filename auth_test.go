@@ -1,8 +1,6 @@
 package auth_test
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyrusn/goHTTPHelper"
 	"github.com/cyrusn/goJWTAuthHelper"
 	"github.com/cyrusn/goTestHelper"
 
@@ -19,141 +16,50 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type User struct {
-	Username string
-	Role     string
-	Password string
-}
-
-type Login struct {
-	Username string
-	Password string
-}
-
-type TestModel struct {
-	Name string
-	*User
-	*Login
-}
-
-var testModels = []*TestModel{
-	&TestModel{
-		Name: "Success Case",
-		User: &User{
-			Username: "lpteacher1",
-			Password: "abc123",
-			Role:     "TEACHER",
-		},
-		Login: &Login{
-			Username: "lpteacher1",
-			Password: "abc123",
-		},
-	},
-	&TestModel{
-		Name: "Incorrect Login",
-		User: &User{
-			Username: "lpstudent1",
-			Password: "def456",
-			Role:     "STUDENT",
-		},
-		Login: &Login{
-			Username: "lpstudent1",
-			Password: "def123",
-		},
-	},
-	&TestModel{
-		Name: "Forbidden Role",
-		User: &User{
-			Username: "lpstudent2",
-			Password: "ghi789",
-			Role:     "STUDENT",
-		},
-		Login: &Login{
-			Username: "lpstudent2",
-			Password: "ghi789",
-		},
-	},
-}
-
-type route struct {
-	path    string
-	auth    bool
-	scopes  []string
-	method  string
-	handler func(http.ResponseWriter, *http.Request)
-}
-
-var testRoutes = []route{
-	route{
-		path:    "/login/",
-		auth:    false,
-		scopes:  []string{},
-		method:  "GET",
-		handler: loginHandler,
-	},
-	route{
-		path:    "/auth/",
-		auth:    true,
-		scopes:  authorizedRoles,
-		method:  "GET",
-		handler: simpleHandler,
-	},
-	route{
-		path:    "/basic/",
-		auth:    false,
-		scopes:  []string{},
-		method:  "GET",
-		handler: simpleHandler,
-	},
-}
-
-const (
-	jwtKeyName       = "kid"
-	contextClaimName = "myClaim"
-	privateKey       = "hello world"
-)
-
 var (
+	name            = auth.New("myClaim", "kid", "myRole", []byte("secret"))
 	r               = mux.NewRouter()
 	expireToken     = time.Now().Add(time.Minute * 30).Unix()
 	authorizedRoles = []string{"TEACHER"}
 	token           = ""
 )
 
-func (m *TestModel) Authenticate(username, password string) error {
-	for _, m := range testModels {
-		if m.User.Username == username && m.User.Password == password {
-			return nil
-		}
-	}
-	return errors.New("Unauthorised")
-}
-
 func init() {
-	auth.SetPrivateKey(privateKey)
-	auth.SetContextKeyName(contextClaimName)
-	auth.SetJWTKeyName(jwtKeyName)
-
 	for _, ro := range testRoutes {
 		handler := http.HandlerFunc(ro.handler)
 
 		if len(ro.scopes) != 0 {
-			handler = auth.Scope(ro.scopes, handler).(http.HandlerFunc)
+			handler = name.Scope(ro.scopes, handler).(http.HandlerFunc)
 		}
 
 		if ro.auth {
-			handler = auth.Validate(handler).(http.HandlerFunc)
+			handler = name.Validate(handler).(http.HandlerFunc)
 		}
 		r.Handle(ro.path, handler)
 	}
 }
 
 func TestMain(t *testing.T) {
-	t.Run("test 1st route", testRoute1)
-	t.Run("test 2nd route", testRoute2)
+	t.Run("Login:", loginAndGotoAuth)
+	t.Run("/basic/", basicRouteTest)
 }
 
-var testRoute2 = func(t *testing.T) {
+type myClaims struct {
+	Username string
+	Role     string `json:"myRole"`
+	jwt.StandardClaims
+}
+
+var loginAndGotoAuth = func(t *testing.T) {
+	for _, m := range testModels {
+		t.Run(m.Name, func(t *testing.T) {
+			t.Run("/login/", loginTest(m))
+			t.Run("/auth/", authRouteTest(m))
+		})
+	}
+}
+
+var basicRouteTest = func(t *testing.T) {
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/basic/", nil)
 	r.ServeHTTP(w, req)
@@ -164,100 +70,44 @@ var testRoute2 = func(t *testing.T) {
 	assert.Equal(string(body), "secret message", t)
 }
 
-type myClaims struct {
-	Username string
-	Role     string
-	jwt.StandardClaims
-}
+var loginTest = func(m *TestModel) func(*testing.T) {
+	return func(t *testing.T) {
+		loginWriter := httptest.NewRecorder()
+		formString := fmt.Sprintf(`{"Username":"%s", "Password":"%s"}`, m.User.Username, m.User.Password)
+		postForm := strings.NewReader(formString)
+		loginReq := httptest.NewRequest("POST", "/login/", postForm)
+		loginReq.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(loginWriter, loginReq)
 
-var testRoute1 = func(t *testing.T) {
-	for _, m := range testModels {
-		t.Run(m.Name, func(t *testing.T) {
-			t.Run("login", func(t *testing.T) {
-				loginWriter := httptest.NewRecorder()
-				formString := fmt.Sprintf(`{"Username":"%s", "Password":"%s"}`, m.User.Username, m.User.Password)
-				postForm := strings.NewReader(formString)
-				loginReq := httptest.NewRequest("POST", "/login/", postForm)
-				loginReq.Header.Set("Content-Type", "application/json")
-				r.ServeHTTP(loginWriter, loginReq)
-
-				loginResp := loginWriter.Result()
-				tokenBytes, err := ioutil.ReadAll(loginResp.Body)
-				assert.OK(t, err)
-				token = string(tokenBytes)
-			})
-
-			t.Run("test 3rd route", func(t *testing.T) {
-				w := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "/auth/", nil)
-				req.Header.Set(jwtKeyName, token)
-				r.ServeHTTP(w, req)
-
-				resp := w.Result()
-				body, err := ioutil.ReadAll(resp.Body)
-				assert.OK(t, err)
-
-				if m.User.Password == m.Login.Password && in(m.User.Role, authorizedRoles) {
-					assert.Equal(string(body), "secret message", t)
-				} else {
-					assert.Panic(m.Name, t, func() {
-						panic(string(body))
-					})
-				}
-			})
-		})
+		loginResp := loginWriter.Result()
+		tokenBytes, err := ioutil.ReadAll(loginResp.Body)
+		assert.OK(t, err)
+		token = string(tokenBytes)
 	}
 }
 
-func simpleHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("secret message"))
-}
-func in(element string, slice []string) bool {
-	for _, s := range slice {
-		if s == element {
-			return true
+var authRouteTest = func(m *TestModel) func(*testing.T) {
+	return func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/auth/", nil)
+		req.Header.Set(name.GetJWTKey(), token)
+		r.ServeHTTP(w, req)
+
+		resp := w.Result()
+		body, err := ioutil.ReadAll(resp.Body)
+		assert.OK(t, err)
+
+		username := m.User.Username
+		password := m.User.Password
+		correctScope := in(m.User.Role, authorizedRoles)
+
+		if m.authenticate(username, password) == nil && correctScope {
+			assert.Equal(string(body), "secret message", t)
+		} else {
+			assert.Panic(m.Name, t, func() {
+				panic(string(body))
+			})
 		}
 	}
-	return false
-}
 
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-	type LoginForm struct {
-		Username string
-		Password string
-	}
-	errCode := http.StatusUnauthorized
-	loginForm := new(LoginForm)
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		helper.PrintError(w, err, errCode)
-		return
-	}
-	if err := json.Unmarshal(body, loginForm); err != nil {
-		helper.PrintError(w, err, errCode)
-		return
-	}
-
-	username := loginForm.Username
-	password := loginForm.Password
-
-	for _, m := range testModels {
-		if m.User.Username == username {
-			claim := myClaims{
-				Username: m.User.Username,
-				Role:     m.User.Role,
-				StandardClaims: jwt.StandardClaims{
-					ExpiresAt: expireToken,
-				},
-			}
-			token, err := auth.CreateToken(claim, m, m.User.Username, password)
-			if err != nil {
-				helper.PrintError(w, err, errCode)
-				return
-			}
-			w.Write([]byte(token))
-			return
-		}
-	}
-	helper.PrintError(w, errors.New("User not found."), errCode)
 }

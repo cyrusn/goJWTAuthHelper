@@ -15,11 +15,11 @@ import (
 // (default value of roleKeyName is "Role", user can use SetRoleKeyName to set
 // the vale of the roleKeyName).
 // If value with roleKeyName in jwt payload is not in "scopes []string", handler will
-// wthen print error message instead
-func Scope(scopes []string, handler http.Handler) http.Handler {
+// print error message instead
+func (n *Name) Scope(scopes []string, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		errCode := http.StatusUnauthorized
-		role, err := parseRoleInContext(r.Context())
+		role, err := n.parseRoleInContext(r.Context())
 		if err != nil {
 			helper.PrintError(w, err, errCode)
 			return
@@ -32,8 +32,11 @@ func Scope(scopes []string, handler http.Handler) http.Handler {
 	})
 }
 
-func parseRoleInContext(ctx context.Context) (string, error) {
+func (n *Name) parseRoleInContext(ctx context.Context) (string, error) {
+	roleKeyName := n.roleKey
+	contextKeyName := n.contextKey
 	claim := ctx.Value(contextKeyName)
+
 	if claim == nil {
 		errMessage := fmt.Sprintf("%s not found in r.Context()", contextKeyName)
 		return "", errors.New(errMessage)
@@ -41,7 +44,7 @@ func parseRoleInContext(ctx context.Context) (string, error) {
 	m := claim.(jwt.MapClaims)
 	result, ok := m[roleKeyName].(string)
 	if !ok {
-		errMessage := fmt.Sprintf("%s not found in %s(jwt.Claims)", roleKeyName, contextKeyName)
+		errMessage := fmt.Sprintf("[%s] not found in jwt.Claims [%s]", roleKeyName, contextKeyName)
 		return "", errors.New(errMessage)
 	}
 

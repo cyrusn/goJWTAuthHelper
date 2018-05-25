@@ -6,7 +6,7 @@ import (
 
 // CreateToken return jwt token if the auth success, where claim will be stored
 // in jwt payload
-func CreateToken(claims jwt.Claims) (string, error) {
+func (n *Name) CreateToken(claims jwt.Claims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(privateKey)
+	return token.SignedString(n.privateKey)
 }

@@ -1,42 +1,54 @@
 package auth
 
-type contextKey string
+// Name store the names for auth package
+type Name struct {
+	contextKey string // the key in http.Context which store information jwt.Claims
+	jwtKey     string
+	roleKey    string
+	privateKey []byte
+}
 
-var (
-	privateKey = []byte("secret")
-	// contextKeyClaim is the keyName in http.Context which store information
-	// jwt.Claims
-	contextKeyName = contextKey("context-claims")
-	jwtKeyName     = "jwt-token"
-	roleKeyName    = "Role"
-)
+// New return new key names
+func New(contextKey, jwtKey, roleKey string, privateKey []byte) Name {
+	return Name{contextKey, jwtKey, roleKey, privateKey}
+}
 
 // SetPrivateKey set the privateKey for authentication
 // the default value of privateKey is secret
-func SetPrivateKey(key string) {
-	privateKey = []byte(key)
+func (n *Name) SetPrivateKey(key string) {
+	n.privateKey = []byte(key)
 }
 
-// SetContextKeyName set the name of ContextKeyClaim,
+// SetContextKey set the name of ContextKeyClaim,
 // the default value of contextKey is "context-claims"
-func SetContextKeyName(name string) {
-	contextKeyName = contextKey(name)
+func (n *Name) SetContextKey(name string) {
+	n.contextKey = name
 }
 
-// SetJWTKeyName set the name of Role in jwt payload,
+// SetJWTKey set the name of Role in jwt payload,
 // the default value of roleKey is "jwt-token"
-func SetJWTKeyName(name string) {
-	jwtKeyName = name
+func (n *Name) SetJWTKey(name string) {
+	n.jwtKey = name
 }
 
-// GetJWTKeyName get the name of Role in jwt payload,
-func GetJWTKeyName() string {
-	return jwtKeyName
+// SetRoleKey declares rolekey in jwt.Claims. auth package will
+// get the value with the key named by rolekey to valdate the scope
+// of authentication, the default value of role is "Role"
+func (n *Name) SetRoleKey(name string) {
+	n.roleKey = name
 }
 
-// SetRoleKeyName declares rolekeyName in jwt.Claims. auth package will
-// get the value with the key named by rolekeyName to valdate the scope
-// of authentication, the default value of roleKeyname is "Role"
-func SetRoleKeyName(name string) {
-	roleKeyName = name
+// GetContextKey get the name of Role in jwt payload,
+func (n *Name) GetContextKey() string {
+	return n.contextKey
+}
+
+// GetRoleKey get the name of Role in jwt payload,
+func (n *Name) GetRoleKey() string {
+	return n.roleKey
+}
+
+// GetJWTKey get the name of Role in jwt payload,
+func (n *Name) GetJWTKey() string {
+	return n.jwtKey
 }
