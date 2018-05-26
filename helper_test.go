@@ -10,7 +10,7 @@ func authAndCreateToken(username, password string) (*TestModel, error) {
 		return nil, err
 	}
 
-	token, err := name.CreateToken(myClaims{
+	token, err := secret.CreateToken(myClaims{
 		Username: m.User.Username,
 		Role:     m.User.Role,
 		StandardClaims: jwt.StandardClaims{

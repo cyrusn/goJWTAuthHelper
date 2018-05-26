@@ -16,10 +16,10 @@ import (
 // the vale of the roleKeyName).
 // If value with roleKeyName in jwt payload is not in "scopes []string", handler will
 // print error message instead
-func (n *Name) Scope(scopes []string, handler http.Handler) http.Handler {
+func (s *Secret) Scope(scopes []string, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		errCode := http.StatusUnauthorized
-		role, err := n.parseRoleInContext(r.Context())
+		role, err := s.parseRoleInContext(r.Context())
 		if err != nil {
 			helper.PrintError(w, err, errCode)
 			return
@@ -32,9 +32,9 @@ func (n *Name) Scope(scopes []string, handler http.Handler) http.Handler {
 	})
 }
 
-func (n *Name) parseRoleInContext(ctx context.Context) (string, error) {
-	roleKeyName := n.roleKey
-	contextKeyName := n.contextKey
+func (s *Secret) parseRoleInContext(ctx context.Context) (string, error) {
+	roleKeyName := s.roleKeyName
+	contextKeyName := s.contextKeyName
 	claim := ctx.Value(contextKeyName)
 
 	if claim == nil {

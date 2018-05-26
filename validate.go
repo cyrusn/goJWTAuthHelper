@@ -13,9 +13,9 @@ import (
 )
 
 // Validate is a middleware which will check if jwt in request header is valid
-func (n *Name) Validate(handler http.Handler) http.Handler {
+func (s *Secret) Validate(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		jwtToken := r.Header.Get(n.jwtKey)
+		jwtToken := r.Header.Get(s.jwtKeyName)
 		if jwtToken == "" {
 			errCode := http.StatusForbidden
 			err := errors.New("Token not found")
@@ -23,7 +23,7 @@ func (n *Name) Validate(handler http.Handler) http.Handler {
 			return
 		}
 
-		token, err := jwt.Parse(jwtToken, n.keyFunc)
+		token, err := jwt.Parse(jwtToken, s.keyFunc)
 		errCode := http.StatusUnauthorized
 		if err != nil {
 			helper.PrintError(w, err, errCode)
@@ -31,7 +31,7 @@ func (n *Name) Validate(handler http.Handler) http.Handler {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			ctx := context.WithValue(r.Context(), n.contextKey, claims)
+			ctx := context.WithValue(r.Context(), s.contextKeyName, claims)
 			req := r.WithContext(ctx)
 			handler.ServeHTTP(w, req)
 			return
@@ -40,6 +40,6 @@ func (n *Name) Validate(handler http.Handler) http.Handler {
 	})
 }
 
-func (n *Name) keyFunc(token *jwt.Token) (interface{}, error) {
-	return n.privateKey, nil
+func (s *Secret) keyFunc(token *jwt.Token) (interface{}, error) {
+	return s.privateKey, nil
 }

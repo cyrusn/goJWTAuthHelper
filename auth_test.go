@@ -18,22 +18,28 @@ import (
 )
 
 var (
-	name            = auth.New("myClaim", "kid", "myRole", []byte("secret"))
+	secret          auth.Secret
 	r               = mux.NewRouter()
 	expireToken     = time.Now().Add(time.Minute * 30).Unix()
 	authorizedRoles = []string{"TEACHER"}
 )
 
 func init() {
+	Example()
+}
+
+// Example show how to use Scope and Validate func
+func Example() {
+	secret = auth.New("myClaim", "kid", "myRole", []byte("secret"))
 	for _, ro := range testRoutes {
 		handler := http.HandlerFunc(ro.handler)
 
 		if len(ro.scopes) != 0 {
-			handler = name.Scope(ro.scopes, handler).(http.HandlerFunc)
+			handler = secret.Scope(ro.scopes, handler).(http.HandlerFunc)
 		}
 
 		if ro.auth {
-			handler = name.Validate(handler).(http.HandlerFunc)
+			handler = secret.Validate(handler).(http.HandlerFunc)
 		}
 		r.Handle(ro.path, handler)
 	}
@@ -124,7 +130,7 @@ var authRouteTest = func(m *TestModel) func(*testing.T) {
 	return func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", "/auth/", nil)
-		req.Header.Set(name.GetJWTKey(), m.Token)
+		req.Header.Set(secret.GetJWTKeyName(), m.Token)
 		r.ServeHTTP(w, req)
 
 		resp := w.Result()
