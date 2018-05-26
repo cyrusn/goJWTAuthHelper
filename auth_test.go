@@ -89,8 +89,7 @@ var loginTest = func(m *TestModel) func(*testing.T) {
 			assert.Equal(string(body), CORRECT_RESULT, t)
 		}
 
-		errMsg := new(helper.ErrorMessage)
-		err = helper.UnmarshalErrMessage(body, errMsg)
+		errMsg, err := helper.UnmarshalErrMessage(body)
 		assert.OK(t, err)
 
 		errs := []error{
