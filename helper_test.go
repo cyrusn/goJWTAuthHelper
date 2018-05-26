@@ -10,9 +10,11 @@ func authAndCreateToken(username, password string) (*TestModel, error) {
 		return nil, err
 	}
 
+	role := m.User.Role
+
 	token, err := secret.CreateToken(myClaims{
-		Username: m.User.Username,
-		Role:     m.User.Role,
+		Username: username,
+		Role:     role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expireToken,
 		},

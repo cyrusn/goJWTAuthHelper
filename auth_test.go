@@ -3,7 +3,6 @@ package auth_test
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -26,23 +25,6 @@ var (
 
 func init() {
 	Example()
-}
-
-// Example show how to use Scope and Validate func
-func Example() {
-	secret = auth.New("myClaim", "kid", "myRole", []byte("secret"))
-	for _, ro := range testRoutes {
-		handler := http.HandlerFunc(ro.handler)
-
-		if len(ro.scopes) != 0 {
-			handler = secret.Scope(ro.scopes, handler).(http.HandlerFunc)
-		}
-
-		if ro.auth {
-			handler = secret.Validate(handler).(http.HandlerFunc)
-		}
-		r.Handle(ro.path, handler)
-	}
 }
 
 func TestMain(t *testing.T) {
