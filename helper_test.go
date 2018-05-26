@@ -35,7 +35,7 @@ func findAndAuth(username, password string) (*TestModel, error) {
 		return nil, err
 	}
 
-	if err := m.authenticate(password); err != nil {
+	if err := m.comparePassword(password); err != nil {
 		return nil, err
 	}
 
@@ -51,8 +51,8 @@ func findModel(username string) (*TestModel, error) {
 	return nil, ERR_USER_NOT_FOUND
 }
 
-// Authenticate authorised user login
-func (m *TestModel) authenticate(password string) error {
+// comparePassword authorised user login
+func (m *TestModel) comparePassword(password string) error {
 	if m.User.Password == password {
 		return nil
 	}

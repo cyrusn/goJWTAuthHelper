@@ -1,6 +1,3 @@
-// Package auth is a auth server package which will handle the login request
-// user will receive a JWT Token once sucessfull login. JWT token will
-// contain basic information of the user which depend on application call.
 package auth
 
 import (
@@ -12,8 +9,8 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
-// Validate is a middleware which will check if jwt in request header is valid
-func (s *Secret) Validate(handler http.Handler) http.Handler {
+// Authenticate is a middleware which will check if jwt in request header is valid
+func (s *Secret) Authenticate(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		jwtToken := r.Header.Get(s.jwtKeyName)
 		if jwtToken == "" {

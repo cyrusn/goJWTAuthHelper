@@ -13,12 +13,14 @@ func Example() {
 	for _, ro := range testRoutes {
 		handler := http.HandlerFunc(ro.handler)
 
+		// pass Access to handler first
 		if len(ro.scopes) != 0 {
-			handler = secret.Scope(ro.scopes, handler).(http.HandlerFunc)
+			handler = secret.Access(ro.scopes, handler).(http.HandlerFunc)
 		}
 
+		// pass Authenticate at last
 		if ro.auth {
-			handler = secret.Validate(handler).(http.HandlerFunc)
+			handler = secret.Authenticate(handler).(http.HandlerFunc)
 		}
 		r.Handle(ro.path, handler)
 	}
