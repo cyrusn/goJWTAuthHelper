@@ -111,7 +111,7 @@ var authRouteTest = func(m *TestModel) func(*testing.T) {
 	return func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", "/auth/", nil)
-		req.Header.Set(secret.GetJWTKeyName(), m.Token)
+		req.Header.Set("kid", m.Token)
 		r.ServeHTTP(w, req)
 
 		resp := w.Result()
