@@ -18,7 +18,7 @@ func Example() {
 			handler = secret.Access(ro.scopes, handler).(http.HandlerFunc)
 		}
 
-		// pass Authenticate at last
+		// then pass Authenticate at last
 		if ro.auth {
 			handler = secret.Authenticate(handler).(http.HandlerFunc)
 		}
