@@ -26,13 +26,13 @@ func Example() {
 	}
 }
 
-// ExampleSecret_CreateToken shows how to create JWT token
-func ExampleSecret_CreateToken(username string, role string) (string, error) {
-	return secret.CreateToken(myClaims{
+// ExampleSecret_GenerateToken shows how to create JWT token
+func ExampleSecret_GenerateToken(username string, role string) (string, error) {
+	return secret.GenerateToken(myClaims{
 		Username: username,
 		Role:     role,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expireToken,
+			ExpiresAt: expire(10),
 		},
 	})
 }

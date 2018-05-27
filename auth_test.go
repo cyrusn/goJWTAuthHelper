@@ -12,14 +12,12 @@ import (
 	"github.com/cyrusn/goJWTAuthHelper"
 	"github.com/cyrusn/goTestHelper"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 )
 
 var (
 	secret          auth.Secret
 	r               = mux.NewRouter()
-	expireToken     = time.Now().Add(time.Minute * 30).Unix()
 	authorizedRoles = []string{"TEACHER"}
 )
 
@@ -30,12 +28,20 @@ func init() {
 func TestMain(t *testing.T) {
 	t.Run("auth test", loginAndGotoAuthTest)
 	t.Run("basic test", basicTest)
+	time.Sleep(2000 * time.Millisecond)
+	t.Run("Refresh token", refreshTest)
 }
 
-type myClaims struct {
-	Username string
-	Role     string `json:"myRole"`
-	jwt.StandardClaims
+var refreshTest = func(t *testing.T) {
+	for _, m := range testModels {
+		if m.Token != "" {
+			claims := myClaims{}
+			newToken, err := secret.UpdateToken(m.Token, &claims)
+			assert.OK(t, err)
+			m.Token = newToken
+			t.Run("auth", authRouteTest(m))
+		}
+	}
 }
 
 var loginAndGotoAuthTest = func(t *testing.T) {

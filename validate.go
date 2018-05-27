@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/cyrusn/goHTTPHelper"
@@ -15,8 +14,7 @@ func (s *Secret) Authenticate(handler http.Handler) http.Handler {
 		jwtToken := r.Header.Get(s.jwtKeyName)
 		if jwtToken == "" {
 			errCode := http.StatusForbidden
-			err := errors.New("Token not found")
-			helper.PrintError(w, err, errCode)
+			helper.PrintError(w, ErrTokenNotFound, errCode)
 			return
 		}
 
@@ -33,7 +31,7 @@ func (s *Secret) Authenticate(handler http.Handler) http.Handler {
 			handler.ServeHTTP(w, req)
 			return
 		}
-		helper.PrintError(w, errors.New("Invalid Token"), errCode)
+		helper.PrintError(w, ErrInvalidToken, errCode)
 	})
 }
 

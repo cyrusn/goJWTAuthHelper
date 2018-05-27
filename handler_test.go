@@ -32,7 +32,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	username := loginForm.Username
 	password := loginForm.Password
 
-	m, err := authAndCreateToken(username, password)
+	m, err := authAndGenerateToken(username, password)
 	if err != nil {
 		helper.PrintError(w, err, errCode)
 		return

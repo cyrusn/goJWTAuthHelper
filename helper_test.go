@@ -4,7 +4,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
-func authAndCreateToken(username, password string) (*TestModel, error) {
+func authAndGenerateToken(username, password string) (*TestModel, error) {
 	m, err := findAndAuth(username, password)
 	if err != nil {
 		return nil, err
@@ -12,13 +12,14 @@ func authAndCreateToken(username, password string) (*TestModel, error) {
 
 	role := m.User.Role
 
-	token, err := secret.CreateToken(myClaims{
+	claims := myClaims{
 		Username: username,
 		Role:     role,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expireToken,
+			ExpiresAt: expire(10),
 		},
-	})
+	}
+	token, err := secret.GenerateToken(claims)
 
 	if err != nil {
 		return nil, err

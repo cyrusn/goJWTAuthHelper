@@ -2,8 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/cyrusn/goHTTPHelper"
@@ -25,7 +23,7 @@ func (s *Secret) Access(scopes []string, handler http.Handler) http.Handler {
 			return
 		}
 		if ok := in(role, scopes); !ok {
-			helper.PrintError(w, errors.New("User not allow"), errCode)
+			helper.PrintError(w, ErrAccessDenied, errCode)
 			return
 		}
 		handler.ServeHTTP(w, r)
@@ -33,19 +31,18 @@ func (s *Secret) Access(scopes []string, handler http.Handler) http.Handler {
 }
 
 func (s *Secret) parseRoleInContext(ctx context.Context) (string, error) {
-	roleKeyName := s.roleKeyName
 	contextKeyName := s.contextKeyName
+	roleKeyName := s.roleKeyName
+
 	claim := ctx.Value(contextKeyName)
 
 	if claim == nil {
-		errMessage := fmt.Sprintf("%s not found in r.Context()", contextKeyName)
-		return "", errors.New(errMessage)
+		return "", ErrContextNotFound
 	}
 	m := claim.(jwt.MapClaims)
 	result, ok := m[roleKeyName].(string)
 	if !ok {
-		errMessage := fmt.Sprintf("[%s] not found in jwt.Claims [%s]", roleKeyName, contextKeyName)
-		return "", errors.New(errMessage)
+		return "", ErrRoleNotFound
 	}
 
 	return result, nil
