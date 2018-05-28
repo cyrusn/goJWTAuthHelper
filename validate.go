@@ -11,7 +11,7 @@ import (
 // Authenticate is a middleware which will check if jwt in request header is valid
 func (s *Secret) Authenticate(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		jwtToken := r.Header.Get(s.jwtKeyName)
+		jwtToken := r.Header.Get(s.JWTKeyName)
 		if jwtToken == "" {
 			errCode := http.StatusForbidden
 			helper.PrintError(w, ErrTokenNotFound, errCode)
@@ -26,7 +26,7 @@ func (s *Secret) Authenticate(handler http.Handler) http.Handler {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			ctx := context.WithValue(r.Context(), s.contextKeyName, claims)
+			ctx := context.WithValue(r.Context(), s.ContextKeyName, claims)
 			req := r.WithContext(ctx)
 			handler.ServeHTTP(w, req)
 			return
