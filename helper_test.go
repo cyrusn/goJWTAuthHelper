@@ -16,7 +16,7 @@ func authAndGenerateToken(username, password string) (*TestModel, error) {
 		Username: username,
 		Role:     role,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expire(10),
+			ExpiresAt: expiresAfter(lifeTime),
 		},
 	}
 	token, err := secret.GenerateToken(claims)

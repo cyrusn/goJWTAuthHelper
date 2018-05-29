@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	auth "github.com/cyrusn/goJWTAuthHelper"
-	jwt "github.com/dgrijalva/jwt-go"
 )
 
 // Example show how to use Scope and Validate func
@@ -24,15 +23,4 @@ func Example() {
 		}
 		r.Handle(ro.path, handler)
 	}
-}
-
-// ExampleSecret_GenerateToken shows how to create JWT token
-func ExampleSecret_GenerateToken(username string, role string) (string, error) {
-	return secret.GenerateToken(myClaims{
-		Username: username,
-		Role:     role,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expire(10),
-		},
-	})
 }
