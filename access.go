@@ -9,14 +9,21 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
-// Access is a middleware that parse jwt in header with value of RoleKeyName as key
-// (default value of RoleKeyName is "Role", user can use SetRoleKeyName to set
-// the vale of the RoleKeyName).
-// If value with RoleKeyName in jwt payload is not in "scopes []string", handler will
+// Access is a middleware that parse jwt in header with value of `RoleKeyName` as key
+// (default value of `RoleKeyName` is "Role", user can use `SetRoleKeyName` to set
+// the vale of the `RoleKeyName`).
+// If value with `RoleKeyName` in jwt payload is not in "scopes []string", handler will
 // print error message instead
+// if `scopes` is an empty string, all roles are eligible to access.
 func (s *Secret) Access(scopes []string, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		errCode := http.StatusUnauthorized
+
+		if len(scopes) == 0 {
+			handler.ServeHTTP(w, r)
+			return
+		}
+
 		role, err := s.parseRoleInContext(r.Context())
 		if err != nil {
 			helper.PrintError(w, err, errCode)
