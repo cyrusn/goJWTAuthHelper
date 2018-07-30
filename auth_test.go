@@ -4,133 +4,101 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
-	helper "github.com/cyrusn/goHTTPHelper"
-	"github.com/cyrusn/goJWTAuthHelper"
 	"github.com/cyrusn/goTestHelper"
-
-	"github.com/gorilla/mux"
 )
 
 var (
-	secret          auth.Secret
-	r               = mux.NewRouter()
 	authorizedRoles = []string{"TEACHER"}
+	jwtToken        = ""
+	startTime       = time.Now()
 )
 
-func init() {
-	Example()
-}
-
 func TestMain(t *testing.T) {
-	t.Run("auth test", loginAndGotoAuthTest)
-	t.Run("basic test", basicTest)
-	time.Sleep(2000 * time.Millisecond)
+	Example()
+
+	t.Run("public test", publicTest)
+	t.Run("fail access test", failAccessTest(403))
+	t.Run("login test", loginTest("teacher1", "teacher"))
+	t.Run("success access test", successAccessTest)
+	t.Run("login test", loginTest("student1", "student"))
+	t.Run("fail access test", failAccessTest(401))
 	t.Run("Refresh token", refreshTest)
 }
 
+var publicTest = func(t *testing.T) {
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/public", nil)
+	r.ServeHTTP(w, req)
+
+	resp := w.Result()
+	body, err := ioutil.ReadAll(resp.Body)
+	assert.OK(t, err)
+	assert.Equal(string(body), PUBLIC_CONTENT, t)
+}
+
+func failAccessTest(statusCode int) func(*testing.T) {
+	return func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/secret", nil)
+		req.Header.Set("kid", jwtToken)
+		r.ServeHTTP(w, req)
+
+		resp := w.Result()
+		assert.Equal(resp.StatusCode, statusCode, t)
+	}
+}
+
+var loginTest = func(username, role string) func(*testing.T) {
+	return func(t *testing.T) {
+		w := httptest.NewRecorder()
+		path := fmt.Sprintf("/login/%s/%s", username, role)
+		req := httptest.NewRequest("POST", path, nil)
+		r.ServeHTTP(w, req)
+
+		resp := w.Result()
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		if resp.StatusCode < 300 {
+			jwtToken = string(body)
+			assert.OK(t, nil)
+		}
+	}
+}
+
+func successAccessTest(t *testing.T) {
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/secret", nil)
+	req.Header.Set("kid", jwtToken)
+	r.ServeHTTP(w, req)
+
+	resp := w.Result()
+	assert.Equal(resp.StatusCode, 200, t)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	got := string(body)
+	assert.Equal(got, SECRET_CONTENT, t)
+}
+
 var refreshTest = func(t *testing.T) {
-	for _, m := range testModels {
-		if m.Token != "" {
-			claims := myClaims{}
-			newToken, err := secret.UpdateToken(m.Token, &claims)
-			assert.OK(t, err)
-			m.Token = newToken
-			t.Run("auth", authRouteTest(m))
-		}
-	}
-}
+	time.Sleep(5000 * time.Millisecond)
 
-var loginAndGotoAuthTest = func(t *testing.T) {
-	for _, m := range testModels {
-		m.Token = ""
-		t.Run(m.Name, func(t *testing.T) {
-			t.Run("login", loginTest(m))
-			t.Run("auth", authRouteTest(m))
-		})
-	}
-}
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/refresh", nil)
+	req.Header.Set("kid", jwtToken)
+	r.ServeHTTP(w, req)
+	resp := w.Result()
+	assert.Equal(resp.StatusCode, 200, t)
 
-var basicTest = func(t *testing.T) {
-	for _, m := range testModels {
-		m.Token = ""
-		t.Run(m.Name, func(t *testing.T) {
-			t.Run("login", loginTest(m))
-			t.Run("basic", func(t *testing.T) {
-				w := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "/basic/", nil)
-				r.ServeHTTP(w, req)
+	// Uncomments the following lines to get the refreshed JWT,
+	// you may use the tool in https://jwt.io/#debugger to see decode the token
 
-				resp := w.Result()
-				body, err := ioutil.ReadAll(resp.Body)
-				assert.OK(t, err)
-				assert.Equal(string(body), CORRECT_RESULT, t)
-			})
-		})
-	}
-}
-
-var loginTest = func(m *TestModel) func(*testing.T) {
-	return func(t *testing.T) {
-		w := httptest.NewRecorder()
-		formJSON := fmt.Sprintf(`{"Username":"%s", "Password":"%s"}`, m.Login.Username, m.Login.Password)
-		postForm := strings.NewReader(formJSON)
-		req := httptest.NewRequest("POST", "/login/", postForm)
-		req.Header.Set("Content-Type", "application/json")
-		r.ServeHTTP(w, req)
-
-		resp := w.Result()
-		body, err := ioutil.ReadAll(resp.Body)
-		assert.OK(t, err)
-
-		if resp.StatusCode < 400 {
-			m.Token = string(body)
-			return
-		}
-
-		if m.Result == nil {
-			assert.Equal(string(body), CORRECT_RESULT, t)
-		}
-
-		errMsg, err := helper.UnmarshalErrMessage(body)
-		assert.OK(t, err)
-
-		errs := []error{
-			ERR_FORBIDDEN,
-			ERR_INCORRECT_PASSWORD,
-			ERR_USER_NOT_FOUND,
-		}
-
-		for _, e := range errs {
-			if m.Result == e {
-				assert.Equal(errMsg.Message, e.Error(), t)
-			}
-		}
-
-	}
-}
-
-var authRouteTest = func(m *TestModel) func(*testing.T) {
-	return func(t *testing.T) {
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", "/auth/", nil)
-		req.Header.Set("kid", m.Token)
-		r.ServeHTTP(w, req)
-
-		resp := w.Result()
-		body, err := ioutil.ReadAll(resp.Body)
-		if m.Result == nil {
-			assert.OK(t, err)
-			assert.Equal(string(body), CORRECT_RESULT, t)
-		}
-
-		// check invalid access
-		assert.Panic(m.Name, t, func() {
-			panic(string(body))
-		})
-	}
-
+	// fmt.Println(startTime.
+	// 	Add(time.Minute * time.Duration(expiresAfter)).
+	// 	Add(time.Second * 5))
+	// body, _ := ioutil.ReadAll(resp.Body)
+	// fmt.Println(jwtToken)
+	// fmt.Println(string(body))
 }

@@ -1,6 +1,10 @@
-// Package auth is a auth server package which will handle the login request
-// user will receive a JWT Token once sucessfull login. JWT token will
-// contain basic information of the user which depend on application call.
+// Package auth is a package which handles the authentication.
+// User can receive a JWT string if user login sucessfully.
+// JWT contains the information in payload session, user can define which
+// information to be stored there.
+//
+// If User want to store information in payload session of jwt,
+// You may customize a jwt.Claims. Please see example of create jwt.Claims
 package auth
 
 import "errors"
@@ -15,10 +19,19 @@ var (
 
 // Secret store the information for Secret for auth package
 type Secret struct {
-	ContextKeyName string // the http.Context which store information jwt.Claims
-	JWTKeyName     string
-	RoleKeyName    string
-	privateKey     []byte
+	// ContextKeyName is the key name of your custom jwt.Claims
+	// which is stored in the http.Context.
+	ContextKeyName string
+
+	// JWTKeyName is the key name where the jwt be stored in the
+	// HTTP headers of a request
+	JWTKeyName string
+
+	// RoleKeyName is a key name of role in your custom jwt.Claims
+	RoleKeyName string
+
+	// privateKey is private key of jwt
+	privateKey []byte
 }
 
 // New return new key names
