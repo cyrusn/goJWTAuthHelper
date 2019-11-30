@@ -1,0 +1,8 @@
+github.com/cyrusn/goHTTPHelper v0.0.0-20180526061010-c5b3684f5bb8 h1:w9L8oTJdGZd3X4ZWq+cMNI4BwUcugOxE0KvKYh7dGGY=
+github.com/cyrusn/goHTTPHelper v0.0.0-20180526061010-c5b3684f5bb8/go.mod h1:7tqNniJVVfZEgsQ+JY3Xw+odnZlaV/WOT33KrW0FMmI=
+github.com/cyrusn/goTestHelper v0.0.0-20180526070543-b282f57e829f h1:rOFr4xoBEHRtqAaT/SUo9ooJyH6WeZsZbDncPsC/EgE=
+github.com/cyrusn/goTestHelper v0.0.0-20180526070543-b282f57e829f/go.mod h1:adltRMfOwdSt+9vanvw0yu1t9cntWbykVYbl1qA/QZU=
+github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
+github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
+github.com/gorilla/mux v1.7.3 h1:gnP5JzjVOuiZD07fKKToCAOjS0yOpj/qPETTXCCS6hw=
+github.com/gorilla/mux v1.7.3/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
